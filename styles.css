@@ -50,35 +50,53 @@ header h1 {
   gap: calc(var(--spacing) * 2);
   padding: calc(var(--spacing) * 3);
   flex: 1;
-  min-height: 0; /* allows children to shrink/grow properly inside flex */
+  min-height: 0; /* allows children to shrink/grow  */
 }
 
-/* Basket becomes a full-width bar: items list on the left, total on the right */
+
 .basket {
   order: 1;
-  width: 33%;
+  width: 33.333%;
   box-sizing: border-box;
   background: var(--card-bg);
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   flex-shrink: 0;
-  height: auto;
+  height: 240px;
 }
 
 .basket h2 {
-  margin: 0;
+  margin: 0 0 var(--spacing) 0;
   font-size: 1.1rem;
   font-weight: 600;
+  flex-shrink: 0;
+}
+
+#basket-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+#basket-items li {
+  display: flex;
+  justify-content: space-between;
+  padding: calc(var(--spacing) / 2) 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
 }
 
 .basket p {
-  margin: 0;
+  margin: var(--spacing) 0 0 0;
   font-size: 1.1rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* Results grid fills all remaining page height, 4 columns */
