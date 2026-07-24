@@ -10,6 +10,18 @@ function render(list) {
   `).join("");
 }
 
+function renderBasket() {
+  document.querySelector("#basket-items").innerHTML = basket.map(p => `
+    <li>
+      <span>${p.name}</span>
+      <span>£${p.price.toFixed(2)}</span>
+    </li>
+  `).join("");
+
+  const total = basket.reduce((sum, item) => sum + item.price, 0);
+  document.querySelector("#total").textContent = `£${total.toFixed(2)}`;
+}
+
 document.querySelector("#search").addEventListener("input", e => {
   const query = e.target.value.toLowerCase();
   const filtered = PRODUCTS.filter(p => p.name.toLowerCase().includes(query));
@@ -23,8 +35,7 @@ document.querySelector("#results").addEventListener("click", e => {
   const product = PRODUCTS.find(p => p.id == id);
   basket.push(product);
 
-  const total = basket.reduce((sum, item) => sum + item.price, 0);
-  document.querySelector("#total").textContent = `£${total.toFixed(2)}`;
+  renderBasket();
 });
 
 render(PRODUCTS);
