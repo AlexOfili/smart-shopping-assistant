@@ -7,11 +7,18 @@
   --font: system-ui, sans-serif;
 }
 
+html, body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font);
   background: var(--background);
   color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 header {
@@ -21,6 +28,7 @@ header {
   padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
   background: var(--card-bg);
   border-bottom: 1px solid #ddd;
+  flex-shrink: 0;
 }
 
 header h1 {
@@ -35,30 +43,71 @@ header h1 {
   border-radius: 4px;
 }
 
+/* Stacked layout: basket bar on top, results grid filling the rest */
 .layout {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: calc(var(--spacing) * 2);
   padding: calc(var(--spacing) * 3);
+  flex: 1;
+  min-height: 0; /* allows children to shrink/grow properly inside flex */
 }
 
+/* Basket becomes a full-width bar: items list on the left, total on the right */
+.basket {
+  order: 1;
+  width: 33%;
+  box-sizing: border-box;
+  background: var(--card-bg);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  height: auto;
+}
+
+.basket h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.basket p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Results grid fills all remaining page height, 4 columns */
 #results {
+  order: 2;
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--spacing);
-  align-content: start;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+  gap: calc(var(--spacing) * 2);
+  align-content: stretch;
+  overflow-y: auto;
 }
 
 .card {
   background: var(--card-bg);
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 3);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .card h3 {
   margin: 0 0 var(--spacing) 0;
-  font-size: 1rem;
+  font-size: 1.15rem;
 }
 
 .card button {
@@ -71,22 +120,20 @@ header h1 {
   cursor: pointer;
 }
 
-.basket {
-  background: var(--card-bg);
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: calc(var(--spacing) * 2);
-  height: fit-content;
-}
-
 @media (max-width: 600px) {
-  .layout {
-    grid-template-columns: 1fr;
+  #results {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   header {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--spacing);
+  }
+
+  .basket {
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--spacing);
   }
 }
