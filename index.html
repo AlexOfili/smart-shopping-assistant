@@ -10,7 +10,16 @@
 
   <header>
     <h1>Smart Shopping Assistant</h1>
-    <input type="text" id="search" placeholder="Search products...">
+    <input type="text" id="search" placeholder="Search products..." aria-label="Search products">
+    <select id="aisle-filter" aria-label="Filter by aisle">
+      <option value="">All aisles</option>
+    </select>
+    <select id="sort" aria-label="Sort by price">
+      <option value="">Sort by</option>
+      <option value="asc">Price: Low to High</option>
+      <option value="desc">Price: High to Low</option>
+    </select>
+    <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
   </header>
 
   <main class="layout">
@@ -20,8 +29,8 @@
 
     <aside class="basket">
       <h2>My Basket</h2>
-      <ul id = "basket-items"></ul>
-      <p>Total: <span id="total">£0.00</span></p>
+      <ul id="basket-items"></ul>
+      <p>Total: <span id="total" aria-live="polite">£0.00</span></p>
     </aside>
   </main>
 
