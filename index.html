@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Shopping Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header>
+    <h1>Smart Shopping Assistant</h1>
+    <input type="text" id="search" placeholder="Search products...">
+  </header>
+
+  <main class="layout">
+    <section id="results" aria-label="Product results">
+      <!-- product cards get inserted here by JavaScript -->
+    </section>
+
+    <aside class="basket">
+      <h2>My Basket</h2>
+      <p>Total: <span id="total">£0.00</span></p>
+    </aside>
+  </main>
+
+  <script src="data/products.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
