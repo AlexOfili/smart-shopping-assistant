@@ -7,6 +7,12 @@
   --font: system-ui, sans-serif;
 }
 
+body.dark {
+  --background: #121212;
+  --text: #EAEAEA;
+  --card-bg: #1E1E1E;
+}
+
 html, body {
   height: 100%;
 }
@@ -19,28 +25,50 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--spacing);
   padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
   background: var(--card-bg);
   border-bottom: 1px solid #ddd;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 header h1 {
   font-size: 1.5rem;
   margin: 0;
+  flex: 1 1 auto;
 }
 
-#search {
+#search,
+#aisle-filter,
+#sort {
   padding: var(--spacing);
   font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+#theme-toggle {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: var(--spacing) calc(var(--spacing) * 1.5);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* Stacked layout: basket bar on top, results grid filling the rest */
@@ -66,6 +94,7 @@ header h1 {
   flex-direction: column;
   flex-shrink: 0;
   height: 240px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .basket h2 {
@@ -121,6 +150,7 @@ header h1 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .card h3 {
@@ -150,6 +180,7 @@ header h1 {
   }
 
   .basket {
+    width: 100%;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing);
