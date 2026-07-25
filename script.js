@@ -123,3 +123,20 @@ themeToggle.addEventListener("click", () => {
 populateAisles();
 renderBasket();
 applyFilters();
+
+async function loadWeather() {
+  const box = document.querySelector("#weather");
+  box.textContent = "Loading store conditions...";
+  try {
+    const url = "https://api.open-meteo.com/v1/forecast?latitude=51.5&longitude=-0.12&current=temperature_2m";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    box.textContent = `Outside: ${data.current.temperature_2m}°C`;
+  } catch (err) {
+    box.textContent = "Weather unavailable right now.";
+    console.error(err);
+  }
+}
+
+loadWeather();
