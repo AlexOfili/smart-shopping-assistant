@@ -1,4 +1,6 @@
 const basket = JSON.parse(localStorage.getItem("basket") || "[]");
+// Each basket entry is now { id, qty } 
+// Product details from PRODUCTS when needed
 
 function render(list) {
   document.querySelector("#results").innerHTML = list.map(p => `
@@ -11,14 +13,32 @@ function render(list) {
 }
 
 function renderBasket() {
-  document.querySelector("#basket-items").innerHTML = basket.map(p => `
-    <li>
-      <span>${p.name}</span>
-      <span>£${p.price.toFixed(2)}</span>
-    </li>
-  `).join("");
+  // Remove any entry with qty < 1, or whose id no longer matches a real product
+  for (let i = basket.length - 1; i >= 0; i--) {
+    const product = PRODUCTS.find(p => p.id == basket[i].id);
+    if (!product || !basket[i].qty || basket[i].qty < 1) {
+      basket.splice(i, 1);
+    }
+  }
 
-  const total = basket.reduce((sum, item) => sum + item.price, 0);
+  document.querySelector("#basket-items").innerHTML = basket.map(entry => {
+    const product = PRODUCTS.find(p => p.id == entry.id);
+    return `
+      <li>
+        <span>${product.name}${entry.qty > 1 ? ` ×${entry.qty}` : ""}</span>
+        <span class="basket-item-controls">
+          <button class="qty-btn" data-id="${entry.id}" data-action="dec" aria-label="Remove one ${product.name}">−</button>
+          <button class="qty-btn" data-id="${entry.id}" data-action="inc" aria-label="Add one more ${product.name}">+</button>
+        </span>
+        <span>£${(product.price * entry.qty).toFixed(2)}</span>
+      </li>
+    `;
+  }).join("");
+
+  const total = basket.reduce((sum, entry) => {
+    const product = PRODUCTS.find(p => p.id == entry.id);
+    return sum + product.price * entry.qty;
+  }, 0);
   document.querySelector("#total").textContent = `£${total.toFixed(2)}`;
 
   localStorage.setItem("basket", JSON.stringify(basket));
@@ -55,8 +75,33 @@ document.querySelector("#results").addEventListener("click", e => {
   if (e.target.tagName !== "BUTTON") return;
 
   const id = e.target.dataset.id;
-  const product = PRODUCTS.find(p => p.id == id);
-  basket.push(product);
+  const existing = basket.find(entry => entry.id == id);
+
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    basket.push({ id, qty: 1 });
+  }
+
+  renderBasket();
+});
+
+document.querySelector("#basket-items").addEventListener("click", e => {
+  if (!e.target.classList.contains("qty-btn")) return;
+
+  const id = e.target.dataset.id;
+  const action = e.target.dataset.action;
+  const entry = basket.find(entry => entry.id == id);
+  if (!entry) return;
+
+  if (action === "inc") {
+    entry.qty += 1;
+  } else {
+    entry.qty -= 1;
+    if (entry.qty <= 0) {
+      basket.splice(basket.indexOf(entry), 1);
+    }
+  }
 
   renderBasket();
 });
