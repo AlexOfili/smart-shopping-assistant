@@ -34,3 +34,17 @@ script.js
 
 
 data/products.js
+
+
+
+## Live data
+
+
+This app fetches live temperature data from the [Open-Meteo API](https://open-meteo.com/) for London coordinates. No API key is required.
+
+- **What it returns:** current temperature in °C
+- **What could go wrong:** the network could be slow or unavailable, or the API
+  itself could be down or return an error status. Handled with loading and
+  error states in `loadWeather()` in `script.js` — if the fetch fails, the
+  widget shows "Weather unavailable right now." instead of breaking or showing
+  nothing.
