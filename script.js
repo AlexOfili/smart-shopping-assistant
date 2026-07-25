@@ -1,3 +1,5 @@
+let PRODUCTS = [];
+
 const basket = JSON.parse(localStorage.getItem("basket") || "[]");
 // Each basket entry is now { id, qty } 
 // Product details from PRODUCTS when needed
@@ -120,9 +122,24 @@ themeToggle.addEventListener("click", () => {
   localStorage.setItem("theme", isDark ? "dark" : "light");
 });
 
-populateAisles();
-renderBasket();
-applyFilters();
+async function loadProducts() {
+  const results = document.querySelector("#results");
+  results.textContent = "Loading products...";
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/products");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    PRODUCTS = await res.json();
+
+    populateAisles();
+    renderBasket();
+    applyFilters();
+  } catch (err) {
+    results.textContent = "Couldn't load products right now.";
+    console.error(err);
+  }
+}
+
+loadProducts();
 
 async function loadWeather() {
   const box = document.querySelector("#weather");
