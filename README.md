@@ -48,3 +48,17 @@ This app fetches live temperature data from the [Open-Meteo API](https://open-me
   error states in `loadWeather()` in `script.js` — if the fetch fails, the
   widget shows "Weather unavailable right now." instead of breaking or showing
   nothing.
+
+
+
+
+## Known issue: Products require a local server
+
+Products come from a Flask API at `127.0.0.1:5000`. This only runs on my
+machine, so it works when I test it as long as the Flask API is running, but it won't work for anyone else viewing the live GitHub Pages link and they'll see "Couldn't load products right now."
+
+
+Fix would be hosting Flask somewhere public instead of locally.
+
+
+ 
