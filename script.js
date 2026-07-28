@@ -8,8 +8,8 @@ function render(list) {
   document.querySelector("#results").innerHTML = list.map(p => `
     <div class="card">
       <h3>${p.name}</h3>
-      <p>£${p.price.toFixed(2)} · ${p.aisle}</p>
-      <button data-id="${p.id}">Add</button>
+      <p>£${p.price.toFixed(2)} · ${p.aisle}${p.inStock === false ? " · Out of stock" : ""}</p>
+      <button data-id="${p.id}" ${p.inStock === false ? "disabled" : ""}>Add</button>
     </div>
   `).join("");
 }
@@ -120,6 +120,40 @@ themeToggle.addEventListener("click", () => {
   const isDark = document.body.classList.toggle("dark");
   themeToggle.textContent = isDark ? "☀️" : "🌙";
   localStorage.setItem("theme", isDark ? "dark" : "light");
+});
+
+const assistantForm = document.querySelector("#assistant-form");
+const assistantResult = document.querySelector("#assistant-result");
+
+assistantForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const need = document.querySelector("#assistant-need").value.trim();
+  const budgetValue = document.querySelector("#assistant-budget").value;
+  const budget = budgetValue ? parseFloat(budgetValue) : null;
+
+  if (!need) return;
+
+  assistantResult.textContent = "Thinking...";
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ need, budget })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const budgetNote = data.withinBudget === false
+      ? " (couldn't quite fit the budget - showing the closest option)"
+      : "";
+    assistantResult.innerHTML = `
+      <pre>${data.suggestion}</pre>
+      <p class="assistant-meta">Attempts: ${data.attempts}${budgetNote}</p>
+    `;
+  } catch (err) {
+    assistantResult.textContent = "Couldn't get a suggestion right now.";
+    console.error(err);
+  }
 });
 
 async function loadProducts() {
