@@ -61,4 +61,13 @@ machine, so it works when I test it as long as the Flask API is running, but it 
 Fix would be hosting Flask somewhere public instead of locally.
 
 
- 
+## How to run it
+The assistant needs two local servers running alongside each other (in separate terminals):
+
+- `python mock_llm_server.py` — the mock LLM backend (port 5001), no API key needed
+- `python app.py` — the main Flask API (port 5000), which the site talks to
+
+Then open `index.html` as normal (e.g. with Live Server).
+
+## How to use it
+Type what you need in the "What do you need?" box — e.g. "a vegan dinner" or "breakfast" — and optionally a budget in £. Click **Ask** and the assistant suggests a basket of in-stock products with a running total, automatically retrying with a cheaper basket if the first suggestion goes over budget.
