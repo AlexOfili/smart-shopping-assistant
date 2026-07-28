@@ -27,6 +27,16 @@
     </div>
   </header>
 
+  <section id="assistant" class="assistant" aria-labelledby="assistant-heading">
+    <h2 id="assistant-heading">Smart Assistant</h2>
+    <form id="assistant-form" class="assistant-form">
+      <input type="text" id="assistant-need" placeholder="What do you need? e.g. a vegan dinner" aria-label="Describe what you need">
+      <input type="number" id="assistant-budget" placeholder="Budget £ (optional)" min="0" step="0.01" aria-label="Budget in pounds, optional">
+      <button type="submit">Ask</button>
+    </form>
+    <div id="assistant-result" aria-live="polite"></div>
+  </section>
+
   <main class="layout">
     <section id="results" aria-label="Product results">
       <!-- product cards get inserted here by JavaScript -->
