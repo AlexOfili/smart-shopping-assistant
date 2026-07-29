@@ -24,17 +24,12 @@ A simple web app for browsing a grocery product list, searching and filtering th
 ### Project structure
 
 
-index.html
-
-
-styles.css
-
-
-script.js
-
-
-data/products.js
-
+- index.html            # page markup
+- styles.css             # layout
+- script.js               # frontend logic (basket, filters, weather,assistant form)
+- app.py                  # Flask API - serves products and the /api/suggest assistant endpoint
+- mock_llm_server.py      # stand-in LLM used when LLM_MODE=mock
+- prompt-library.md       # prompts used by the assistant, with before/after rationale
 
 
 ## Live data
