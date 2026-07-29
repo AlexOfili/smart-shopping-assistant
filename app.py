@@ -70,7 +70,7 @@ def build_prompt(need, budget, previous_total=None):
     in_stock = [p for p in PRODUCTS if p["inStock"]]
     catalogue = "\n".join(f'- {p["name"]} (£{p["price"]:.2f}, {p["aisle"]})' for p in in_stock)
 
-    budget_line = f"Budget: £{budget:.2f}. Stay at or under this." if budget else "No fixed budget given."
+    budget_line = f"Budget: £{budget:.2f}. Stay at or under this." if budget is not None else "No fixed budget given."
     retry_line = (
         f'\nYour previous basket totalled £{previous_total:.2f}, which exceeds the budget. '
         "Suggest a cheaper basket - swap or drop items so the new total fits the budget."
@@ -124,11 +124,11 @@ def suggest():
         total = extract_total(suggestion)
 
         # Guardrail: reject and retry while the basket is over budget.
-        if not budget or total is None or total <= budget:
+        if budget is None or total is None or total <= budget:
             return jsonify({
                 "suggestion": suggestion,
                 "attempts": attempt,
-                "withinBudget": (not budget) or (total is not None and total <= budget),
+                "withinBudget": (budget is None) or (total is not None and total <= budget),
             })
         previous_total = total
 
