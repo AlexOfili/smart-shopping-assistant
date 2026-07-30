@@ -151,8 +151,8 @@ assistantForm.addEventListener("submit", async e => {
       <p class="assistant-meta">Attempts: ${data.attempts}${budgetNote}</p>
     `;
   } catch (err) {
-    assistantResult.textContent = "Couldn't get a suggestion right now.";
-    console.error(err);
+  assistantResult.textContent = err.message;
+  console.error(err);
   }
 });
 
