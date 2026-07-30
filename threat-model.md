@@ -26,9 +26,12 @@
 
 | | Threat category | Means | A concrete threat to my app | Mitigation | Done? |
 |---|---|---|---|---|---|
-| **S / E** | Spoofing / elevation of privilege | Pretending to be an administrator or gaining admin rights | An attacker repeatedly guesses the admin password, steals a token and changes product prices. | bcrypt password hashes, login rate limiting, short-lived bearer tokens and authorisation on price updates. | Yes |
-| **T** | Tampering | Changing data or instructions | A user sends a negative/huge budget, malicious prompt text or an unauthorised price value. | Strict server-side type, length and range validation; catalogue allow-listing; admin-only price changes. | Yes |
-| **I** | Information disclosure | Seeing secrets or internal details | An API key, stack trace or backend exception is exposed to the browser or logs. | Secrets only in environment variables, generic client errors, scrubbed logs, debug mode off and restricted CORS. | Yes |
+| **S** | Spoofing | Pretending to be someone else | An attacker repeatedly guesses the administrator password and signs in as an authorised user. | bcrypt password hashing, login rate limiting and short-lived authentication tokens. | Yes |
+| **T** | Tampering | Changing data or instructions | A user submits a negative or extremely large budget, malicious prompt text or an unauthorised product price. | Server-side type, length and range validation, catalogue allow-listing and protected price updates. | Yes |
+| **R** | Repudiation | Performing an action and later denying it | An administrator changes a product price and later denies making the change. | Security audit logs record login attempts, price changes, timestamps and the administrator responsible. | Yes |
+| **I** | Information disclosure | Seeing information they should not see | An API key, stack trace or backend error is exposed through the browser, source code or logs. | Secrets are stored in environment variables, client errors are generic, logs are scrubbed, debug mode is disabled and CORS is restricted. | Yes |
+| **D** | Denial of service | Making the service unavailable | A user repeatedly sends assistant requests until the API or LLM service becomes overloaded. | Flask-Limiter request limits, maximum request sizes, LLM timeouts and limits on retry attempts. | Yes |
+| **E** | Elevation of privilege | Gaining permissions they should not have | A normal user obtains an admin token and changes product prices without permission. | Admin authentication, bearer-token checks and authorisation before every price update. | Yes |
 
 ## 5. The three things I would fix first
 
