@@ -11,10 +11,13 @@
 7. **Verify first** — It arrives from a personal Gmail account and encourages comparison before submission. Confirm with Priya through a known channel and navigate to GitHub independently before opening anything or sharing your own work.
 8. **Phish** — The certificate domain is unrelated, the timing is suspicious and a ZIP file asking the user to “enable content” is a strong malware warning.
 
-## A. Which two are trying to get something from you?
+## A. Which messages are trying to get something from you?
 
-- **Message 4** is trying to obtain the staff-console passcode.
-- **Message 7** is trying to draw out access to, comparison with or disclosure of your submission work. Even if Priya is real, verify the request before sharing anything.
+Checked against my own two-line rule (**stop when urgency is used to make me share, pay, sign in or open a file**), the honest count is three, not two:
+
+- **Message 4** is trying to obtain the staff-console passcode (*share*).
+- **Message 7** is trying to draw out access to, comparison with or disclosure of your submission work. Even if Priya is real, verify the request before sharing anything (*share*).
+- **Message 8** is trying to get the ZIP file opened and its content "enabled" — that's the *open a file* clause of my own rule, and it's the one I missed the first time. Urgency plus a request to open a file is the pattern, regardless of whether the payload turns out to be a credential prompt or malware.
 
 ## B. What should you do about message 3?
 

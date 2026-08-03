@@ -32,7 +32,7 @@ Detailed backend exceptions are logged server-side but are no longer returned to
 
 ### 7. Browser and API hardening
 
-CORS is restricted to the configured local Live Server origins. Responses include `nosniff`, frame, referrer, cache and permissions headers. The frontend now builds elements with `textContent` instead of inserting product or model output through `innerHTML`, removing the direct stored/reflected XSS path.
+CORS is restricted to the configured local Live Server origins. Responses include `nosniff`, frame, referrer, cache and permissions headers. Four places still built markup with `innerHTML` and string interpolation — the product grid, the basket list, the aisle filter, and the assistant result panel. The last one was the most serious: it inserted `data.suggestion`, the LLM's raw reply, directly as HTML. `validate_need()` only constrains what the shopper's text can contain going into the prompt; it does not sanitise what the model sends back, so in live mode any HTML or script markup the model echoed or was tricked into emitting would have been parsed and run. All four are now built with `document.createElement`/`textContent` (`replaceChildren` instead of `innerHTML` assignment), so interpolated text — product names, aisle names, and the model's suggestion — is always inserted as text, never parsed as markup, closing the stored/reflected XSS path regardless of what the source data contains.
 
 ### 8. Auditability
 
