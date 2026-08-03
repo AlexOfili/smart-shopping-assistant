@@ -52,9 +52,7 @@ PRODUCTS = [
 LLM_MODE = os.environ.get("LLM_MODE", "mock").lower()
 LLM_URL = os.environ.get(
     "LLM_URL",
-    "http://127.0.0.1:5001/v1/messages"
-    if LLM_MODE == "mock"
-    else "https://api.anthropic.com/v1/messages",
+    "https://api.anthropic.com/v1/messages" if LLM_MODE == "live" else "",
 )
 API_KEY = os.environ.get("API_KEY")
 MAX_GUARDRAIL_ATTEMPTS = 3
@@ -64,18 +62,80 @@ ADMIN_TOKENS: dict[str, float] = {}
 NEED_PATTERN = re.compile(r"^[A-Za-z0-9 £.,!?&'()/:+\-]+$")
 
 
+# =============================================================================
+# Mock LLM (in-process)
+# =============================================================================
+# Used when LLM_MODE=mock so a single Render Web Service can serve the whole
+# app. The previous setup needed a second process (mock_llm_server.py on port
+# 5001) which doesn't work on Render's free tier. The mock returns the same
+# shape of text that the live Anthropic call would, so the rest of the
+# pipeline (extract_total, suggestion_matches_catalogue) is unchanged.
+
+MOCK_CATALOGUE_LINE = re.compile(r"^- (.+?) \(£([0-9.]+), (.+?)\)$", re.MULTILINE)
+MOCK_NEED_LINE = re.compile(r'Shopper\'s need: "(.+?)"')
+MOCK_BUDGET_LINE = re.compile(r"Budget: £([0-9]+(?:\.[0-9]+)?)")
+MOCK_RETRY_MARKER = "exceeds the budget"
+
+# Very rough "does this look like a real thing to eat/make" keyword map -
+# the point isn't a clever model, it's a deterministic stand-in so the rest
+# of the app can be built and tested against something real.
+MOCK_KEYWORD_HINTS = {
+    "vegan": ["oat", "tomato", "spinach", "rice", "banana", "pasta"],
+    "breakfast": ["oat", "egg", "bread", "yogurt", "banana"],
+    "dinner": ["chicken", "rice", "spinach", "tomato", "pasta"],
+    "bake": ["sourdough", "bread", "egg"],
+}
+
+
+def mock_pick_basket(catalogue, need, is_retry):
+    """A very small deterministic 'model': keyword-match a handful of items, only
+    ever choosing from the catalogue it was given in the prompt (this is what
+    grounding buys you - it has nothing else to pick from)."""
+    chosen = []
+    for word, hints in MOCK_KEYWORD_HINTS.items():
+        if word in need:
+            chosen = [p for p in catalogue if any(h in p["name"].lower() for h in hints)]
+            break
+    if not chosen:
+        chosen = catalogue[:4]  # fallback: a small general basket
+    if is_retry:
+        # Budget guardrail retry: keep only the 2 cheapest matching items so
+        # the new total comes in lower than the rejected attempt.
+        chosen = sorted(chosen, key=lambda p: p["price"])[:2]
+    return chosen
+
+
+def mock_llm_response(prompt: str) -> str:
+    """Run the mock LLM logic in-process and return the assistant's text reply
+    in the same shape the live Anthropic call produces. extract_total and
+    suggestion_matches_catalogue operate on this text unchanged."""
+    catalogue = [
+        {"name": m.group(1), "price": float(m.group(2)), "aisle": m.group(3)}
+        for m in MOCK_CATALOGUE_LINE.finditer(prompt)
+    ]
+    need_match = MOCK_NEED_LINE.search(prompt)
+    need = need_match.group(1).lower() if need_match else ""
+    is_retry = MOCK_RETRY_MARKER in prompt
+
+    basket = mock_pick_basket(catalogue, need, is_retry)
+    total = sum(item["price"] for item in basket)
+
+    lines = [f'- {item["name"]} - £{item["price"]:.2f}' for item in basket]
+    return "\n".join(lines) + f"\nTotal: £{total:.2f}"
+
+
 def validate_llm_configuration() -> None:
-    parsed = urlparse(LLM_URL)
+    if LLM_MODE == "mock":
+        # Mock mode runs the LLM logic in-process; no network call, no URL check.
+        return
     if LLM_MODE == "live":
         if not API_KEY:
             raise RuntimeError("API_KEY must be set when LLM_MODE=live")
+        parsed = urlparse(LLM_URL)
         if parsed.scheme != "https" or parsed.hostname != "api.anthropic.com":
             raise RuntimeError("Live LLM_URL must use https://api.anthropic.com")
-    elif LLM_MODE == "mock":
-        if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}:
-            raise RuntimeError("Mock LLM_URL must point to localhost")
-    else:
-        raise RuntimeError("LLM_MODE must be 'mock' or 'live'")
+        return
+    raise RuntimeError("LLM_MODE must be 'mock' or 'live'")
 
 
 def security_db():
@@ -220,10 +280,15 @@ class LLMBackendError(Exception):
 
 
 def call_llm(prompt: str) -> str:
-    headers = {"content-type": "application/json"}
-    if LLM_MODE == "live":
-        headers["x-api-key"] = API_KEY
-        headers["anthropic-version"] = "2023-06-01"
+    if LLM_MODE == "mock":
+        # In-process mock - no network, no API key, deterministic.
+        return mock_llm_response(prompt)
+
+    headers = {
+        "content-type": "application/json",
+        "x-api-key": API_KEY,
+        "anthropic-version": "2023-06-01",
+    }
 
     try:
         response = requests.post(
