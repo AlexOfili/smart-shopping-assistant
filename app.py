@@ -420,6 +420,17 @@ def rate_limited(_error):
     return jsonify({"error": "too many requests; try again later"}), 429
 
 
+@app.get("/")
+def home():
+    return jsonify({
+        "status": "online",
+        "service": "Smart Shopping Assistant API",
+        "endpoints": {
+            "products": "/api/products",
+            "suggestions": "/api/suggest"
+        }
+    }), 200
+
 @app.get("/api/products")
 @limiter.limit("60 per minute")
 def products():
