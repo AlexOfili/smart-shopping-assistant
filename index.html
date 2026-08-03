@@ -11,7 +11,10 @@
   <header>
     <div class="header-top">
       <h1>Smart Shopping Assistant</h1>
-      <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+      <div class="header-actions">
+        <div id="weather" aria-label="Current weather" aria-live="polite">Loading store conditions...</div>
+        <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+      </div>
     </div>
 
     <div class="header-controls">
@@ -38,19 +41,17 @@
   </section>
 
   <main class="layout">
-    <section id="results" aria-label="Product results">
-      <!-- product cards get inserted here by JavaScript -->
-    </section>
-
     <aside class="basket" aria-labelledby="basket-heading">
       <h2 id="basket-heading">My Basket</h2>
       <ul id="basket-items"></ul>
       <p>Total: <span id="total" aria-live="polite">£0.00</span></p>
     </aside>
+
+    <section id="results" aria-label="Product results">
+      <!-- product cards get inserted here by JavaScript -->
+    </section>
   </main>
 
-  <div id="weather">Loading store conditions...</div>
-  
   <script src="script.js"></script>
 
 </body>
