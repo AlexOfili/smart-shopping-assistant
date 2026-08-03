@@ -73,6 +73,7 @@ function renderBasket() {
     const product = PRODUCTS.find(p => p.id == entry.id);
     return sum + product.price * entry.qty;
   }, 0);
+
   document.querySelector("#total").textContent = `£${total.toFixed(2)}`;
 
   localStorage.setItem("basket", JSON.stringify(basket));
@@ -106,8 +107,13 @@ function applyFilters() {
     (aisle === "" || p.aisle === aisle)
   );
 
-  if (sort === "asc") list = [...list].sort((a, b) => a.price - b.price);
-  if (sort === "desc") list = [...list].sort((a, b) => b.price - a.price);
+  if (sort === "asc") {
+    list = [...list].sort((a, b) => a.price - b.price);
+  }
+
+  if (sort === "desc") {
+    list = [...list].sort((a, b) => b.price - a.price);
+  }
 
   render(list);
 }
@@ -137,12 +143,14 @@ document.querySelector("#basket-items").addEventListener("click", e => {
   const id = e.target.dataset.id;
   const action = e.target.dataset.action;
   const entry = basket.find(entry => entry.id == id);
+
   if (!entry) return;
 
   if (action === "inc") {
     entry.qty += 1;
   } else {
     entry.qty -= 1;
+
     if (entry.qty <= 0) {
       basket.splice(basket.indexOf(entry), 1);
     }
@@ -170,6 +178,7 @@ const assistantResult = document.querySelector("#assistant-result");
 
 assistantForm.addEventListener("submit", async e => {
   e.preventDefault();
+
   const need = document.querySelector("#assistant-need").value.trim();
   const budgetValue = document.querySelector("#assistant-budget").value;
   const budget = budgetValue ? parseFloat(budgetValue) : null;
@@ -177,14 +186,24 @@ assistantForm.addEventListener("submit", async e => {
   if (!need) return;
 
   assistantResult.textContent = "Thinking...";
+
   try {
-    const res = await fetch("http://127.0.0.1:5000/api/suggest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ need, budget })
-    });
+    const res = await fetch(
+      "https://smart-shopping-assistant-8a1x.onrender.com/api/suggest",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ need, budget })
+      }
+    );
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    if (!res.ok) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
 
     const budgetNote = data.withinBudget === false
       ? " (couldn't quite fit the budget - showing the closest option)"
@@ -205,17 +224,24 @@ assistantForm.addEventListener("submit", async e => {
 
     assistantResult.replaceChildren(pre, meta);
   } catch (err) {
-  assistantResult.textContent = err.message;
-  console.error(err);
+    assistantResult.textContent = err.message;
+    console.error(err);
   }
 });
 
 async function loadProducts() {
   const results = document.querySelector("#results");
   results.textContent = "Loading products...";
+
   try {
-    const res = await fetch("http://127.0.0.1:5000/api/products");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(
+      "https://smart-shopping-assistant-8a1x.onrender.com/api/products"
+    );
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
     PRODUCTS = await res.json();
 
     populateAisles();
@@ -232,11 +258,18 @@ loadProducts();
 async function loadWeather() {
   const box = document.querySelector("#weather");
   box.textContent = "Loading store conditions...";
+
   try {
     const url = "https://api.open-meteo.com/v1/forecast?latitude=51.5&longitude=-0.12&current=temperature_2m";
+
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
     const data = await res.json();
+
     box.textContent = `Outside: ${data.current.temperature_2m}°C`;
   } catch (err) {
     box.textContent = "Weather unavailable right now.";
