@@ -1,6 +1,3 @@
-
-
-
 import math
 import os
 import re
@@ -152,6 +149,10 @@ def issue_admin_token() -> str:
 
 
 def require_admin(view):
+    """STRIDE - Tampering (unauthorized price change): gate admin-only
+    routes behind a short-lived, server-issued bearer token. See
+    admin_login for the bcrypt-checked credential exchange that issues it."""
+
     @wraps(view)
     def wrapped(*args, **kwargs):
         header = request.headers.get("Authorization", "")
@@ -171,6 +172,11 @@ def require_admin(view):
 
 
 def validate_need(value):
+    """STRIDE - Tampering (prompt injection, input side): restrict the
+    shopper's free-text need to a tight character allowlist and length cap so
+    it's harder to smuggle in prompt-breaking syntax. This only covers what
+    goes INTO the prompt - see suggestion_matches_catalogue for the
+    output-side half of this mitigation."""
     if not isinstance(value, str):
         return None, "need must be text"
     value = " ".join(value.split())
@@ -182,6 +188,9 @@ def validate_need(value):
 
 
 def validate_budget(value):
+    """STRIDE - Tampering (invalid budget): reject non-numeric, non-finite,
+    or out-of-range budgets before they ever reach the prompt or the
+    retry-loop's budget comparison."""
     if value in (None, ""):
         return None, None
     if isinstance(value, bool):
@@ -195,32 +204,60 @@ def validate_budget(value):
     return round(budget, 2), None
 
 
+class LLMBackendError(Exception):
+    """Raised when the LLM backend call fails or its response can't be trusted.
+
+    STRIDE - Information disclosure (Anthropic API key): the live-mode
+    request headers (which carry x-api-key) only ever exist in the local
+    scope of call_llm. Every error path below logs a status code and an
+    exception type only - never headers, the outgoing prompt, or the raw
+    response body - and raises this exception with a fixed, generic message.
+    ``from None`` drops the original exception so a caller that logs this
+    exception (or a future maintainer who adds ``logger.exception``) can't
+    accidentally re-surface request/response internals in a log line or in
+    the JSON error body sent back to the browser.
+    """
+
+
 def call_llm(prompt: str) -> str:
     headers = {"content-type": "application/json"}
     if LLM_MODE == "live":
         headers["x-api-key"] = API_KEY
         headers["anthropic-version"] = "2023-06-01"
 
-    response = requests.post(
-        LLM_URL,
-        headers=headers,
-        json={
-            "model": "claude-sonnet-4-6",
-            "max_tokens": 400,
-            "messages": [{"role": "user", "content": prompt}],
-        },
-        timeout=(3, 10),
-    )
-    response.raise_for_status()
-    payload = response.json()
+    try:
+        response = requests.post(
+            LLM_URL,
+            headers=headers,
+            json={
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 400,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=(3, 10),
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        app.logger.error(
+            "LLM backend call failed (status=%s, type=%s)", status, type(exc).__name__
+        )
+        raise LLMBackendError("LLM backend call failed") from None
 
     try:
         text = payload["content"][0]["text"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise ValueError("LLM returned an invalid response shape") from exc
+    except (KeyError, IndexError, TypeError):
+        app.logger.error("LLM response had an unexpected shape")
+        raise LLMBackendError("LLM returned an invalid response shape") from None
 
     if not isinstance(text, str) or not 1 <= len(text) <= 4000:
-        raise ValueError("LLM response length is invalid")
+        app.logger.error(
+            "LLM response length invalid (len=%s)",
+            len(text) if isinstance(text, str) else "n/a",
+        )
+        raise LLMBackendError("LLM response length is invalid")
+
     return text
 
 
@@ -266,6 +303,36 @@ def extract_total(text: str):
         return None
     total = float(match.group(1))
     return total if math.isfinite(total) else None
+
+
+LINE_ITEM_PATTERN = re.compile(
+    r"^-\s*(?P<name>.+?)\s*-\s*£\s*(?P<price>[0-9]+(?:\.[0-9]+)?)\s*$"
+)
+
+
+def suggestion_matches_catalogue(text: str) -> bool:
+    """STRIDE - Tampering (prompt injection): validate_need only constrains
+    what goes INTO the prompt; it says nothing about what the model puts in
+    its reply. An injected instruction in the shopper's need could still try
+    to make the model invent items or misquote prices. Treat the model's
+    output as untrusted too: reject any suggestion whose bulleted line items
+    don't exactly match an in-stock catalogue product name and price.
+    """
+    catalogue = {
+        product["name"]: product["price"] for product in PRODUCTS if product["inStock"]
+    }
+    matched_any_line = False
+    for line in text.splitlines():
+        match = LINE_ITEM_PATTERN.match(line.strip())
+        if not match:
+            continue
+        matched_any_line = True
+        name = match.group("name").strip()
+        price = float(match.group("price"))
+        expected_price = catalogue.get(name)
+        if expected_price is None or abs(expected_price - price) > 0.005:
+            return False
+    return matched_any_line
 
 
 @app.after_request
@@ -318,13 +385,17 @@ def suggest():
         prompt = build_prompt(need, budget, previous_total)
         try:
             suggestion = call_llm(prompt)
-        except (requests.RequestException, ValueError):
-            app.logger.exception("Suggestion backend failed")
+        except LLMBackendError:
+            # call_llm has already logged a sanitized, header-free error.
             return jsonify({"error": "assistant temporarily unavailable"}), 502
 
         total = extract_total(suggestion)
         if total is None:
             app.logger.warning("LLM response did not include a valid total")
+            return jsonify({"error": "assistant returned an invalid response"}), 502
+
+        if not suggestion_matches_catalogue(suggestion):
+            app.logger.warning("LLM response referenced items outside the catalogue")
             return jsonify({"error": "assistant returned an invalid response"}), 502
 
         if budget is None or total <= budget:

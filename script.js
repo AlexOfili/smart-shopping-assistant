@@ -5,13 +5,25 @@ const basket = JSON.parse(localStorage.getItem("basket") || "[]");
 // Product details from PRODUCTS when needed
 
 function render(list) {
-  document.querySelector("#results").innerHTML = list.map(p => `
-    <div class="card">
-      <h3>${p.name}</h3>
-      <p>£${p.price.toFixed(2)} · ${p.aisle}${p.inStock === false ? " · Out of stock" : ""}</p>
-      <button data-id="${p.id}" ${p.inStock === false ? "disabled" : ""}>Add</button>
-    </div>
-  `).join("");
+  const results = document.querySelector("#results");
+  results.replaceChildren(...list.map(p => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const title = document.createElement("h3");
+    title.textContent = p.name;
+
+    const meta = document.createElement("p");
+    meta.textContent = `£${p.price.toFixed(2)} · ${p.aisle}${p.inStock === false ? " · Out of stock" : ""}`;
+
+    const button = document.createElement("button");
+    button.dataset.id = p.id;
+    button.disabled = p.inStock === false;
+    button.textContent = "Add";
+
+    card.append(title, meta, button);
+    return card;
+  }));
 }
 
 function renderBasket() {
@@ -23,19 +35,39 @@ function renderBasket() {
     }
   }
 
-  document.querySelector("#basket-items").innerHTML = basket.map(entry => {
+  document.querySelector("#basket-items").replaceChildren(...basket.map(entry => {
     const product = PRODUCTS.find(p => p.id == entry.id);
-    return `
-      <li>
-        <span>${product.name}${entry.qty > 1 ? ` ×${entry.qty}` : ""}</span>
-        <span class="basket-item-controls">
-          <button class="qty-btn" data-id="${entry.id}" data-action="dec" aria-label="Remove one ${product.name}">−</button>
-          <button class="qty-btn" data-id="${entry.id}" data-action="inc" aria-label="Add one more ${product.name}">+</button>
-        </span>
-        <span>£${(product.price * entry.qty).toFixed(2)}</span>
-      </li>
-    `;
-  }).join("");
+
+    const li = document.createElement("li");
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = `${product.name}${entry.qty > 1 ? ` ×${entry.qty}` : ""}`;
+
+    const controls = document.createElement("span");
+    controls.className = "basket-item-controls";
+
+    const decBtn = document.createElement("button");
+    decBtn.className = "qty-btn";
+    decBtn.dataset.id = entry.id;
+    decBtn.dataset.action = "dec";
+    decBtn.setAttribute("aria-label", `Remove one ${product.name}`);
+    decBtn.textContent = "−";
+
+    const incBtn = document.createElement("button");
+    incBtn.className = "qty-btn";
+    incBtn.dataset.id = entry.id;
+    incBtn.dataset.action = "inc";
+    incBtn.setAttribute("aria-label", `Add one more ${product.name}`);
+    incBtn.textContent = "+";
+
+    controls.append(decBtn, incBtn);
+
+    const priceSpan = document.createElement("span");
+    priceSpan.textContent = `£${(product.price * entry.qty).toFixed(2)}`;
+
+    li.append(nameSpan, controls, priceSpan);
+    return li;
+  }));
 
   const total = basket.reduce((sum, entry) => {
     const product = PRODUCTS.find(p => p.id == entry.id);
@@ -48,9 +80,20 @@ function renderBasket() {
 
 function populateAisles() {
   const aisles = [...new Set(PRODUCTS.map(p => p.aisle))].sort();
-  document.querySelector("#aisle-filter").innerHTML =
-    `<option value="">All aisles</option>` +
-    aisles.map(a => `<option value="${a}">${a}</option>`).join("");
+  const select = document.querySelector("#aisle-filter");
+
+  const allOption = document.createElement("option");
+  allOption.value = "";
+  allOption.textContent = "All aisles";
+
+  const aisleOptions = aisles.map(a => {
+    const option = document.createElement("option");
+    option.value = a;
+    option.textContent = a;
+    return option;
+  });
+
+  select.replaceChildren(allOption, ...aisleOptions);
 }
 
 function applyFilters() {
@@ -146,10 +189,21 @@ assistantForm.addEventListener("submit", async e => {
     const budgetNote = data.withinBudget === false
       ? " (couldn't quite fit the budget - showing the closest option)"
       : "";
-    assistantResult.innerHTML = `
-      <pre>${data.suggestion}</pre>
-      <p class="assistant-meta">Attempts: ${data.attempts}${budgetNote}</p>
-    `;
+
+    // data.suggestion is raw model output. validate_need() only constrains what the
+    // shopper's text can contain going INTO the prompt — it says nothing about what
+    // the LLM can put in its reply, and in live mode that reply isn't otherwise
+    // sanitised. Setting textContent (rather than innerHTML) means any HTML/script
+    // markup the model emits, injected or hallucinated, is displayed as plain text
+    // and never parsed as markup.
+    const pre = document.createElement("pre");
+    pre.textContent = data.suggestion;
+
+    const meta = document.createElement("p");
+    meta.className = "assistant-meta";
+    meta.textContent = `Attempts: ${data.attempts}${budgetNote}`;
+
+    assistantResult.replaceChildren(pre, meta);
   } catch (err) {
   assistantResult.textContent = err.message;
   console.error(err);
